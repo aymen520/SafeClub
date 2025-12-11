@@ -2,14 +2,27 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title SafeClub
  * @dev Smart contract pour la gestion sécurisée de la trésorerie d'un club étudiant
  * @notice Permet la création de propositions de dépenses et le vote des membres
  */
-contract SafeClub is ReentrancyGuard, Ownable {
+contract SafeClub is ReentrancyGuard {
+    
+    // ============ Ownership ============
+    
+    /// @dev Adresse du propriétaire du contrat
+    address private _owner;
+    
+    /// @dev Event émis lors du changement de propriétaire
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    
+    /// @dev Vérifie que l'appelant est le propriétaire
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "Not the owner");
+        _;
+    }
     
     // ============ Structures ============
     
@@ -125,11 +138,32 @@ contract SafeClub is ReentrancyGuard, Ownable {
     /**
      * @dev Constructeur - le déployeur devient owner et premier membre
      */
-    constructor() Ownable(msg.sender) {
+    constructor() {
+        _owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+        
         members[msg.sender] = true;
         memberList.push(msg.sender);
         memberCount = 1;
         emit MemberAdded(msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @dev Retourne l'adresse du propriétaire actuel
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
+    
+    /**
+     * @dev Transfère la propriété du contrat à une nouvelle adresse
+     * @param newOwner Adresse du nouveau propriétaire
+     */
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "New owner is zero address");
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
     }
     
     // ============ Fonctions de Gestion des Membres ============
