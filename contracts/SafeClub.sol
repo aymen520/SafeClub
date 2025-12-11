@@ -257,7 +257,16 @@ contract SafeClub is ReentrancyGuard, Ownable {
     /**
      * @dev Retourne les détails d'une proposition
      * @param _proposalId ID de la proposition
-     * @return Proposal Structure complète de la proposition
+     * @return id Identifiant unique de la proposition
+     * @return description Description de la proposition
+     * @return recipient Adresse du destinataire
+     * @return amount Montant en Wei
+     * @return deadline Timestamp de la deadline
+     * @return votesFor Nombre de votes POUR
+     * @return votesAgainst Nombre de votes CONTRE
+     * @return executed Statut d'exécution
+     * @return creator Adresse du créateur
+     * @return createdAt Timestamp de création
      */
     function getProposal(uint256 _proposalId)
         external
