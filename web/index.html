@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeClub - Trésorerie Décentralisée</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-gradient"></div>
+    
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">🔒 SafeClub</h1>
+                <button id="connectWallet" class="btn-primary">
+                    <span class="wallet-icon">👛</span>
+                    <span id="walletText">Connecter MetaMask</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Status Bar -->
+        <section class="status-bar glass-card">
+            <div class="status-item">
+                <span class="label">Statut</span>
+                <span id="connectionStatus" class="value status-disconnected">Déconnecté</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Votre Adresse</span>
+                <span id="userAddress" class="value">-</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Solde du Vault</span>
+                <span id="vaultBalance" class="value highlight">- ETH</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Membres Actifs</span>
+                <span id="memberCount" class="value">-</span>
+            </div>
+        </section>
+
+        <!-- Actions Section -->
+        <section class="actions-section">
+            <div class="action-card glass-card">
+                <div class="card-header">
+                    <h2>💰 Déposer des Fonds</h2>
+                    <p>Ajouter de l'ETH au vault du club</p>
+                </div>
+                <div class="card-body">
+                    <input type="number" id="depositAmount" placeholder="Montant en ETH" step="0.001" min="0">
+                    <button id="depositBtn" class="btn-primary">Déposer</button>
+                </div>
+            </div>
+
+            <div class="action-card glass-card">
+                <div class="card-header">
+                    <h2>📝 Créer une Proposition</h2>
+                    <p>Proposer une nouvelle dépense</p>
+                </div>
+                <div class="card-body">
+                    <input type="text" id="proposalDescription" placeholder="Description de la dépense">
+                    <input type="text" id="proposalRecipient" placeholder="Adresse du destinataire (0x...)">
+                    <input type="number" id="proposalAmount" placeholder="Montant en ETH" step="0.001" min="0">
+                    <input type="number" id="proposalDuration" placeholder="Durée en jours" min="1" value="7">
+                    <button id="createProposalBtn" class="btn-primary">Créer la Proposition</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Proposals Section -->
+        <section class="proposals-section">
+            <div class="section-header">
+                <h2>🗳️ Propositions</h2>
+                <button id="refreshProposals" class="btn-secondary">🔄 Actualiser</button>
+            </div>
+            
+            <div id="proposalsList" class="proposals-grid">
+                <!-- Proposals will be dynamically inserted here -->
+                <div class="empty-state">
+                    <p>Aucune proposition pour le moment.</p>
+                    <p class="hint">Connectez-vous à MetaMask et créez la première !</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Members Section -->
+        <section class="members-section glass-card">
+            <h2>👥 Membres du Club</h2>
+            <div id="membersList" class="members-grid">
+                <div class="empty-state">Connectez-vous pour voir les membres</div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Transaction en cours...</p>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>SafeClub - Projet Blockchain ING 4 | TEK-UP University</p>
+            <p class="footer-note">⚠️ À des fins éducatives uniquement</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
