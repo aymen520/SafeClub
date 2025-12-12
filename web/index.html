@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,17 +8,27 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="background-gradient"></div>
-    
+
     <header>
         <div class="container">
             <div class="header-content">
                 <h1 class="logo">🔒 SafeClub</h1>
-                <button id="connectWallet" class="btn-primary">
-                    <span class="wallet-icon">👛</span>
-                    <span id="walletText">Connecter MetaMask</span>
-                </button>
+                <div class="header-actions">
+                    <div id="walletInfo" class="wallet-info hidden">
+                        <span id="walletAddress">0x...</span>
+                        <span class="badge">Sepolia</span>
+                    </div>
+                    <!-- Boutons de connexion -->
+                    <button id="connectWallet" class="btn-primary">
+                        <span class="icon">🦊</span> Connecter MetaMask
+                    </button>
+                    <button id="connectManual" class="btn-secondary" style="margin-left: 10px;">
+                        <span class="icon">✏️</span> Manuel
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -77,7 +88,7 @@
                 <h2>🗳️ Propositions</h2>
                 <button id="refreshProposals" class="btn-secondary">🔄 Actualiser</button>
             </div>
-            
+
             <div id="proposalsList" class="proposals-grid">
                 <!-- Proposals will be dynamically inserted here -->
                 <div class="empty-state">
@@ -117,4 +128,5 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>

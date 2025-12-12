@@ -1,9 +1,5 @@
 # Guide de Présentation - SafeClub
 
-**Séance Finale de Validation (10-15 minutes)**
-
----
-
 ## 📋 Checklist Avant la Présentation
 
 ### Préparation Technique
