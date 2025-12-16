@@ -575,3 +575,147 @@ footer {
 .glass-card {
     animation: fadeIn 0.5s ease;
 }
+
+/* Duration Input Group */
+.duration-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.duration-helpers {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.duration-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 0.5rem;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-light);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.duration-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    transform: translateY(-1px);
+}
+
+.duration-btn:active {
+    transform: scale(0.95);
+}
+
+/* Real-time Update Animations */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.updating {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.newly-added {
+    animation: bounceIn 0.5s ease-out;
+}
+
+.value-changed {
+    animation: pulse 0.5s ease-out;
+    color: var(--success-color) !important;
+}
+
+/* Live indicator */
+.live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid var(--success-color);
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    color: var(--success-color);
+    margin-left: 0.5rem;
+}
+
+.live-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--success-color);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Enhanced Toast with Icons */
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toast-icon {
+    font-size: 1.5rem;
+}
+
+/* Auto refresh indicator */
+.auto-refresh-indicator {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 0.5rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-gray);
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    animation: slideIn 0.3s ease-out;
+}
+

@@ -76,7 +76,16 @@
                     <input type="text" id="proposalDescription" placeholder="Description de la dépense">
                     <input type="text" id="proposalRecipient" placeholder="Adresse du destinataire (0x...)">
                     <input type="number" id="proposalAmount" placeholder="Montant en ETH" step="0.001" min="0">
-                    <input type="number" id="proposalDuration" placeholder="Durée en jours" min="1" value="7">
+                    <div class="duration-input-group">
+                        <input type="number" id="proposalDuration" placeholder="Durée en secondes" min="1"
+                            value="604800">
+                        <div class="duration-helpers">
+                            <button type="button" class="duration-btn" onclick="setDuration(3600)">1h</button>
+                            <button type="button" class="duration-btn" onclick="setDuration(86400)">1j</button>
+                            <button type="button" class="duration-btn" onclick="setDuration(604800)">7j</button>
+                            <button type="button" class="duration-btn" onclick="setDuration(2592000)">30j</button>
+                        </div>
+                    </div>
                     <button id="createProposalBtn" class="btn-primary">Créer la Proposition</button>
                 </div>
             </div>

@@ -1,7 +1,7 @@
-// SafeClub Web Interface
-// Web3.js integration for interacting with the SafeClub smart contract
+// SafeClub Web Interface - Enhanced Interactive Version
+// Web3.js integration with real-time updates
 
-// Contract ABI - Complete ABI from Remix compilation
+// Contract ABI - Updated with durationInSeconds
 const CONTRACT_ABI = [
     {
         "inputs": [
@@ -50,7 +50,7 @@ const CONTRACT_ABI = [
             },
             {
                 "internalType": "uint256",
-                "name": "_durationInDays",
+                "name": "_durationInSeconds",
                 "type": "uint256"
             }
         ],
@@ -709,11 +709,13 @@ const CONTRACT_ABI = [
 let web3;
 let contract;
 let userAccount;
-let contractAddress = ''; // Will be set by user input or config
+let contractAddress = '';
+let autoRefreshInterval;
+let eventSubscriptions = [];
+let previousBalances = {};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Attendre que MetaMask soit chargé
     setTimeout(() => {
         initializeApp();
     }, 100);
@@ -729,6 +731,21 @@ function setupEventListeners() {
     document.getElementById('connectManual').addEventListener('click', connectManual);
 }
 
+// Duration Helper Function
+function setDuration(seconds) {
+    document.getElementById('proposalDuration').value = seconds;
+
+    // Visual feedback
+    const input = document.getElementById('proposalDuration');
+    input.classList.add('value-changed');
+    setTimeout(() => {
+        input.classList.remove('value-changed');
+    }, 500);
+}
+
+// Make setDuration global
+window.setDuration = setDuration;
+
 // Connexion Manuelle (Mode Démo)
 async function connectManual() {
     const address = prompt("Entrez votre adresse de portefeuille (ex: 0x...):", "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4");
@@ -736,11 +753,9 @@ async function connectManual() {
     if (!address) return;
 
     if (!web3) {
-        // Mock Web3 pour l'affichage
         if (typeof Web3 !== 'undefined') {
             web3 = new Web3();
         } else {
-            // Fallback si Web3 n'est pas chargé
             web3 = { utils: { fromWei: () => '0', toWei: () => '0', isAddress: () => true } };
         }
     }
@@ -749,7 +764,6 @@ async function connectManual() {
     showToast('Mode Manuel Activé (Lecture Seule)', 'success');
     updateUI();
 
-    // Simuler un contrat connecté pour éviter les erreurs
     if (!contract) {
         console.log('Mode Manuel: Pas de contrat connecté (Lecture seule)');
     }
@@ -757,7 +771,6 @@ async function connectManual() {
 
 // Détection améliorée de MetaMask
 function detectMetaMask() {
-    // Vérifier plusieurs façons
     if (window.ethereum) {
         console.log('✅ MetaMask détecté via window.ethereum');
         return true;
@@ -800,6 +813,7 @@ async function initializeApp() {
                 if (accounts.length > 0) {
                     userAccount = accounts[0];
                     updateUI();
+                    showToast('Compte changé!', 'info');
                 } else {
                     disconnect();
                 }
@@ -819,13 +833,6 @@ async function initializeApp() {
         console.warn('⚠️ MetaMask non détecté');
         showToast('MetaMask semble ne pas être installé', 'error');
         document.getElementById('connectionStatus').textContent = 'MetaMask non détecté';
-
-        // Afficher un message plus détaillé
-        console.log('💡 Suggestions:');
-        console.log('  1. Vérifiez que l\'extension MetaMask est installée');
-        console.log('  2. Vérifiez que l\'extension est activée');
-        console.log('  3. Rechargez la page (F5)');
-        console.log('  4. Redémarrez votre navigateur');
     }
 }
 
@@ -851,11 +858,17 @@ async function connectWallet() {
         }
 
         // Initialize contract
-        // Note: You need to add the actual ABI
         try {
             contract = new web3.eth.Contract(CONTRACT_ABI, contractAddress);
             await updateUI();
-            showToast('Connecté avec succès!', 'success');
+
+            // Start auto-refresh
+            startAutoRefresh();
+
+            // Subscribe to events
+            subscribeToEvents();
+
+            showToast('Connecté avec succès! 🎉', 'success');
         } catch (error) {
             showToast('Erreur lors de l\'initialisation du contrat. Vérifiez l\'ABI.', 'error');
             console.error(error);
@@ -867,17 +880,111 @@ async function connectWallet() {
     }
 }
 
+// Start Auto-Refresh
+function startAutoRefresh() {
+    // Clear existing interval if any
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+
+    // Refresh every 5 seconds
+    autoRefreshInterval = setInterval(async () => {
+        await updateUIQuiet();
+    }, 5000);
+
+    console.log('🔄 Auto-refresh activé (toutes les 5s)');
+}
+
+// Stop Auto-Refresh
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('⏸️ Auto-refresh désactivé');
+    }
+}
+
+// Subscribe to Contract Events
+function subscribeToEvents() {
+    if (!contract) return;
+
+    // Unsubscribe from previous events
+    eventSubscriptions.forEach(sub => {
+        if (sub && sub.unsubscribe) {
+            sub.unsubscribe();
+        }
+    });
+    eventSubscriptions = [];
+
+    try {
+        // FundsReceived Event
+        const fundsReceivedSub = contract.events.FundsReceived()
+            .on('data', (event) => {
+                const amount = web3.utils.fromWei(event.returnValues.amount, 'ether');
+                showToast(`💰 ${amount} ETH déposés!`, 'success');
+                updateUI();
+            });
+        eventSubscriptions.push(fundsReceivedSub);
+
+        // ProposalCreated Event
+        const proposalCreatedSub = contract.events.ProposalCreated()
+            .on('data', (event) => {
+                showToast(`📝 Nouvelle proposition #${event.returnValues.proposalId}!`, 'info');
+                updateUI();
+            });
+        eventSubscriptions.push(proposalCreatedSub);
+
+        // VoteCast Event
+        const voteCastSub = contract.events.VoteCast()
+            .on('data', (event) => {
+                const support = event.returnValues.support ? 'POUR' : 'CONTRE';
+                showToast(`🗳️ Vote ${support} sur proposition #${event.returnValues.proposalId}`, 'info');
+                updateUI();
+            });
+        eventSubscriptions.push(voteCastSub);
+
+        // ProposalExecuted Event
+        const proposalExecutedSub = contract.events.ProposalExecuted()
+            .on('data', (event) => {
+                showToast(`✅ Proposition #${event.returnValues.proposalId} exécutée!`, 'success');
+                updateUI();
+            });
+        eventSubscriptions.push(proposalExecutedSub);
+
+        // MemberAdded Event
+        const memberAddedSub = contract.events.MemberAdded()
+            .on('data', (event) => {
+                showToast(`👥 Nouveau membre ajouté!`, 'info');
+                updateUI();
+            });
+        eventSubscriptions.push(memberAddedSub);
+
+        console.log('✅ Abonné aux événements du contrat');
+    } catch (error) {
+        console.error('Erreur lors de l\'abonnement aux événements:', error);
+    }
+}
+
 // Disconnect
 function disconnect() {
     userAccount = null;
     contract = null;
+    stopAutoRefresh();
+
+    // Unsubscribe from events
+    eventSubscriptions.forEach(sub => {
+        if (sub && sub.unsubscribe) {
+            sub.unsubscribe();
+        }
+    });
+    eventSubscriptions = [];
+
     document.getElementById('connectionStatus').textContent = 'Déconnecté';
     document.getElementById('connectionStatus').className = 'value status-disconnected';
     document.getElementById('userAddress').textContent = '-';
-    document.getElementById('walletText').textContent = 'Connecter MetaMask';
 }
 
-// Update UI
+// Update UI (with visual feedback)
 async function updateUI() {
     if (!userAccount) return;
 
@@ -888,19 +995,43 @@ async function updateUI() {
     // Update user address (shortened)
     const shortAddress = `${userAccount.substring(0, 6)}...${userAccount.substring(38)}`;
     document.getElementById('userAddress').textContent = shortAddress;
-    document.getElementById('walletText').textContent = shortAddress;
+
+    const walletInfo = document.getElementById('walletInfo');
+    const walletAddress = document.getElementById('walletAddress');
+    walletAddress.textContent = shortAddress;
+    walletInfo.classList.remove('hidden');
+
+    // Hide connect button
+    document.getElementById('connectWallet').style.display = 'none';
 
     if (!contract) return;
 
     try {
-        // Get vault balance
+        // Get vault balance with animation
         const balance = await web3.eth.getBalance(contractAddress);
         const balanceInEth = web3.utils.fromWei(balance, 'ether');
-        document.getElementById('vaultBalance').textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
+        const balanceElement = document.getElementById('vaultBalance');
 
-        // Get member count
+        // Check if balance changed
+        if (previousBalances.vault !== balanceInEth) {
+            balanceElement.classList.add('value-changed');
+            setTimeout(() => balanceElement.classList.remove('value-changed'), 500);
+            previousBalances.vault = balanceInEth;
+        }
+
+        balanceElement.textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
+
+        // Get member count with animation
         const memberCount = await contract.methods.memberCount().call();
-        document.getElementById('memberCount').textContent = memberCount;
+        const memberCountElement = document.getElementById('memberCount');
+
+        if (previousBalances.members !== memberCount) {
+            memberCountElement.classList.add('value-changed');
+            setTimeout(() => memberCountElement.classList.remove('value-changed'), 500);
+            previousBalances.members = memberCount;
+        }
+
+        memberCountElement.textContent = memberCount;
 
         // Load proposals
         await loadProposals();
@@ -910,6 +1041,41 @@ async function updateUI() {
 
     } catch (error) {
         console.error('Error updating UI:', error);
+    }
+}
+
+// Update UI Quietly (without feedback)
+async function updateUIQuiet() {
+    if (!userAccount || !contract) return;
+
+    try {
+        const balance = await web3.eth.getBalance(contractAddress);
+        const balanceInEth = web3.utils.fromWei(balance, 'ether');
+        const balanceElement = document.getElementById('vaultBalance');
+
+        if (previousBalances.vault !== balanceInEth) {
+            balanceElement.classList.add('value-changed');
+            setTimeout(() => balanceElement.classList.remove('value-changed'), 500);
+            previousBalances.vault = balanceInEth;
+        }
+
+        balanceElement.textContent = `${parseFloat(balanceInEth).toFixed(4)} ETH`;
+
+        const memberCount = await contract.methods.memberCount().call();
+        const memberCountElement = document.getElementById('memberCount');
+
+        if (previousBalances.members !== memberCount) {
+            memberCountElement.classList.add('value-changed');
+            setTimeout(() => memberCountElement.classList.remove('value-changed'), 500);
+            previousBalances.members = memberCount;
+        }
+
+        memberCountElement.textContent = memberCount;
+
+        await loadProposals();
+
+    } catch (error) {
+        console.error('Error updating UI quietly:', error);
     }
 }
 
@@ -937,13 +1103,17 @@ async function depositFunds() {
             value: amountInWei
         });
 
-        showToast(`${amount} ETH déposés avec succès!`, 'success');
+        showToast(`💰 ${amount} ETH déposés avec succès!`, 'success');
         document.getElementById('depositAmount').value = '';
         await updateUI();
 
     } catch (error) {
         console.error('Error depositing funds:', error);
-        showToast('Erreur lors du dépôt', 'error');
+        if (error.message.includes('User denied')) {
+            showToast('Transaction annulée', 'info');
+        } else {
+            showToast('Erreur lors du dépôt', 'error');
+        }
     } finally {
         showLoading(false);
     }
@@ -975,26 +1145,31 @@ async function createProposal() {
         showLoading(true);
         const amountInWei = web3.utils.toWei(amount, 'ether');
 
+        // Duration is now in seconds, no conversion needed
         await contract.methods.createProposal(
             description,
             recipient,
             amountInWei,
-            parseInt(duration)
+            parseInt(duration) // Duration in seconds
         ).send({ from: userAccount });
 
-        showToast('Proposition créée avec succès!', 'success');
+        showToast('📝 Proposition créée avec succès!', 'success');
 
         // Clear form
         document.getElementById('proposalDescription').value = '';
         document.getElementById('proposalRecipient').value = '';
         document.getElementById('proposalAmount').value = '';
-        document.getElementById('proposalDuration').value = '7';
+        document.getElementById('proposalDuration').value = '604800';
 
         await updateUI();
 
     } catch (error) {
         console.error('Error creating proposal:', error);
-        showToast('Erreur lors de la création de la proposition', 'error');
+        if (error.message.includes('User denied')) {
+            showToast('Transaction annulée', 'info');
+        } else {
+            showToast('Erreur lors de la création de la proposition', 'error');
+        }
     } finally {
         showLoading(false);
     }
@@ -1042,6 +1217,10 @@ function createProposalCard(id, proposal) {
     const isExpired = now > deadline;
     const isExecuted = proposal.executed;
 
+    // Calculate time remaining or passed
+    const timeRemaining = deadline - now;
+    const timeRemainingText = formatTimeRemaining(timeRemaining);
+
     // Calculate acceptance
     const totalVotes = parseInt(proposal.votesFor) + parseInt(proposal.votesAgainst);
     const votePercentage = totalVotes > 0 ? (parseInt(proposal.votesFor) / totalVotes * 100).toFixed(1) : 0;
@@ -1075,6 +1254,10 @@ function createProposalCard(id, proposal) {
                 <span class="detail-value">${deadline.toLocaleString('fr-FR')}</span>
             </div>
             <div class="detail-row">
+                <span class="detail-label">${isExpired ? 'Temps écoulé:' : 'Temps restant:'}</span>
+                <span class="detail-value ${isExpired ? 'vote-against' : 'vote-for'}">${timeRemainingText}</span>
+            </div>
+            <div class="detail-row">
                 <span class="detail-label">Votes POUR:</span>
                 <span class="detail-value vote-for">${proposal.votesFor}</span>
             </div>
@@ -1101,6 +1284,25 @@ function createProposalCard(id, proposal) {
     return card;
 }
 
+// Format Time Remaining
+function formatTimeRemaining(ms) {
+    const absMs = Math.abs(ms);
+    const seconds = Math.floor(absMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+        return `${days}j ${hours % 24}h`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds % 60}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}
+
 // Vote on Proposal
 async function vote(proposalId, support) {
     if (!contract || !userAccount) {
@@ -1111,11 +1313,16 @@ async function vote(proposalId, support) {
     try {
         showLoading(true);
         await contract.methods.vote(proposalId, support).send({ from: userAccount });
-        showToast(`Vote enregistré!`, 'success');
+        const supportText = support ? 'POUR' : 'CONTRE';
+        showToast(`🗳️ Vote ${supportText} enregistré!`, 'success');
         await updateUI();
     } catch (error) {
         console.error('Error voting:', error);
-        showToast('Erreur lors du vote', 'error');
+        if (error.message.includes('User denied')) {
+            showToast('Vote annulé', 'info');
+        } else {
+            showToast('Erreur lors du vote', 'error');
+        }
     } finally {
         showLoading(false);
     }
@@ -1131,11 +1338,15 @@ async function executeProposal(proposalId) {
     try {
         showLoading(true);
         await contract.methods.executeProposal(proposalId).send({ from: userAccount });
-        showToast('Proposition exécutée avec succès!', 'success');
+        showToast('✅ Proposition exécutée avec succès!', 'success');
         await updateUI();
     } catch (error) {
         console.error('Error executing proposal:', error);
-        showToast('Erreur lors de l\'exécution', 'error');
+        if (error.message.includes('User denied')) {
+            showToast('Exécution annulée', 'info');
+        } else {
+            showToast('Erreur lors de l\'exécution', 'error');
+        }
     } finally {
         showLoading(false);
     }
@@ -1169,7 +1380,7 @@ async function loadMembers() {
 
 // Refresh Proposals
 async function refreshProposals() {
-    showToast('Actualisation...', 'info');
+    showToast('🔄 Actualisation...', 'info');
     await updateUI();
 }
 
@@ -1182,7 +1393,24 @@ function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
 
-    toastMessage.textContent = message;
+    // Add icon based on type
+    let icon = '';
+    switch (type) {
+        case 'success':
+            icon = '✅ ';
+            break;
+        case 'error':
+            icon = '❌ ';
+            break;
+        case 'info':
+            icon = 'ℹ️ ';
+            break;
+        case 'warning':
+            icon = '⚠️ ';
+            break;
+    }
+
+    toastMessage.textContent = icon + message;
     toast.className = `toast toast-${type} show`;
 
     setTimeout(() => {
@@ -1195,6 +1423,6 @@ function showLoading(show) {
     overlay.style.display = show ? 'flex' : 'none';
 }
 
-// Make vote and executeProposal functions global
+// Make functions global
 window.vote = vote;
 window.executeProposal = executeProposal;
