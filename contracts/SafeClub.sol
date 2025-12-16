@@ -248,22 +248,22 @@ contract SafeClub is ReentrancyGuard {
      * @param _description Description de la proposition
      * @param _recipient Adresse qui recevra les fonds
      * @param _amount Montant en Wei à transférer
-     * @param _durationInDays Durée en jours avant la deadline
+     * @param _durationInSeconds Durée en secondes avant la deadline
      * @notice Seulement les membres peuvent créer des propositions
      */
     function createProposal(
         string memory _description,
         address payable _recipient,
         uint256 _amount,
-        uint256 _durationInDays
+        uint256 _durationInSeconds
     ) external onlyMember {
         if (_recipient == address(0)) revert InvalidAddress();
         if (_amount == 0) revert InvalidAmount();
         if (_amount > address(this).balance) revert InsufficientFunds();
-        if (_durationInDays == 0) revert InvalidDeadline();
+        if (_durationInSeconds == 0) revert InvalidDeadline();
         
         proposalCount++;
-        uint256 deadline = block.timestamp + (_durationInDays * 1 days);
+        uint256 deadline = block.timestamp + _durationInSeconds;
         
         proposals[proposalCount] = Proposal({
             id: proposalCount,

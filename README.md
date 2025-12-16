@@ -11,7 +11,7 @@ SafeClub est un smart contract Ethereum permettant à un club étudiant de gére
 - 💰 Gérer un coffre-fort en ETH
 - 📝 Créer des propositions de dépenses
 - 🗳️ Voter démocratiquement sur les propositions
-- ✅ Exécuter les paiements uniquement si acceptés par la majorité absolue
+- ✅ Exécuter les paiements uniquement si acceptés par la majorité absolue (> 50% de tous les membres)
 - 🔒 Bénéficier de protections contre les vulnérabilités connues
 
 ## 🎯 Fonctionnalités Principales
